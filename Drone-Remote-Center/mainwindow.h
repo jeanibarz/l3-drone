@@ -2,7 +2,6 @@
 #define MAINWINDOW_H
 
 #include <QMainWindow>
-#include <qwt/qwt_compass.h>
 
 namespace Ui {
 class MainWindow;
