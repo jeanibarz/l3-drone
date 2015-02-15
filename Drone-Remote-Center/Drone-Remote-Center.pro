@@ -12,6 +12,7 @@ TARGET = Drone-Remote-Center
 TEMPLATE = app
 
 win32:LIBS += "$$_PRO_FILE_PWD_/libxbee3_v3.0.10/lib/libxbee3.lib"
+linux:LIBS += lxbee
 
 #LIBS += -L"$$_PRO_FILE_PWD_/libxbee3_v3.0.10/lib" -lxbee
 
