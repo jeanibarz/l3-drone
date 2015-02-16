@@ -19,6 +19,7 @@ linux:LIBS += lxbee
 SOURCES += main.cpp\
         mainwindow.cpp
 
-HEADERS  += mainwindow.h
+HEADERS  += mainwindow.h \
+    communication.h
 
 FORMS    += mainwindow.ui
