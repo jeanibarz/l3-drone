@@ -11,7 +11,6 @@
 #endif
 
 #include "libxbee3_v3.0.10/xbee.h"
-#include "xbee_config.h"
 
 #include "communication.h"
 
@@ -77,17 +76,19 @@ int main(int argc, char *argv[])
         drone_address.addr64[6] = 0x18;
         drone_address.addr64[7] = 0x26;
 
+
         // Configure une nouvelle connection sur la xbee, de type "64-bit Data" (bidirectionnelle) avec l'addresse du drone pour destination
         if ((ret = xbee_conNew(xbee, &con, "64-bit Data", &drone_address)) != XBEE_ENONE) {
                 xbee_log(xbee, -1, "xbee_conNew() returned: %d (%s)", ret, xbee_errorToStr(ret));
                 return ret;
         }
 
+        /*
         // Configure un callback sur la fonction "myCB" sur la connection "con": la fonction "myCB" sera appellée a chaque paquet recu
         if ((ret = xbee_conCallbackSet(con, processLoop, NULL)) != XBEE_ENONE) {
                 xbee_log(xbee, -1, "xbee_conCallbackSet() returned: %d", ret);
                 return ret;
-        }
+        }*/
 
         // xbee_err xbee_connTx(struct xbee_con *con, unsigned char *retVal, const unsigned char *buf, int len);
 

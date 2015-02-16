@@ -413,15 +413,6 @@
       <string>Max latency :</string>
      </property>
     </widget>
-    <zorder>spinBox_6</zorder>
-    <zorder>label_4</zorder>
-    <zorder>spinBox</zorder>
-    <zorder>pushButton_4</zorder>
-    <zorder>label_13</zorder>
-    <zorder>label_32</zorder>
-    <zorder>pushButton_6</zorder>
-    <zorder>spinBox_16</zorder>
-    <zorder>label_12</zorder>
    </widget>
    <widget class="QGroupBox" name="groupBox_3">
     <property name="geometry">
@@ -829,6 +820,22 @@
      </property>
     </widget>
    </widget>
+   <widget class="QDial" name="dial">
+    <property name="geometry">
+     <rect>
+      <x>410</x>
+      <y>290</y>
+      <width>50</width>
+      <height>64</height>
+     </rect>
+    </property>
+    <property name="maximum">
+     <number>9</number>
+    </property>
+    <property name="value">
+     <number>0</number>
+    </property>
+   </widget>
   </widget>
   <widget class="QMenuBar" name="menubar">
    <property name="geometry">
@@ -836,7 +843,7 @@
      <x>0</x>
      <y>0</y>
      <width>783</width>
-     <height>21</height>
+     <height>18</height>
     </rect>
    </property>
   </widget>
