@@ -14,27 +14,6 @@
 
 #include "communication.h"
 
-void processLoop(struct xbee *xbee, struct xbee_con *con, struct xbee_pkt **pkt, void **data) {
-        if ((*pkt)->dataLen == 0) {
-                printf("too short...\n");
-                return;
-        }
-        printf("rx: [%s]\n", (*pkt)->data);
-
-        if((*pkt)->dataLen == sizeof(rxPacket)) {
-            struct rxPacket * rx_data = new rxPacket((*pkt)->data);
-            printf("\t\tpacket_clock:%d\n", rx_data->packet_clock_);
-            printf("\t\tpower_charge:%d\n", rx_data->power_charge_);
-            printf("\t\tgyro:(%d, %d, %d)\n", rx_data->gyro_.roll_, rx_data->gyro_.yaw_, rx_data->gyro_.pitch_);
-            printf("\t\taccel:(%d, %d, %d)\n", rx_data->accel_.longitudinal_, rx_data->accel_.lateral_, rx_data->accel_.vertical_);
-            delete rx_data;
-        }
-
-        struct txPacket * tx_pkt = new txPacket(0,0,0,0);
-        unsigned char ret_val;
-        xbee_sendTxPacket(con, &ret_val, tx_pkt);
-}
-
 #define XBEE_TEST 0 // Switch to 1 to activate XBEE test code
 
 int main(int argc, char *argv[])
@@ -63,19 +42,6 @@ int main(int argc, char *argv[])
                 printf("ret: %d (%s)\n", ret, xbee_errorToStr(ret));
                 return ret;
         }
-
-        // Configuration de l'addresse 64 bits du drone
-        memset(&drone_address, 0, sizeof(drone_address));
-        drone_address.addr64_enabled = 1;
-        drone_address.addr64[0] = 0x00;
-        drone_address.addr64[1] = 0x13;
-        drone_address.addr64[2] = 0xA2;
-        drone_address.addr64[3] = 0x00;
-        drone_address.addr64[4] = 0x40;
-        drone_address.addr64[5] = 0x08;
-        drone_address.addr64[6] = 0x18;
-        drone_address.addr64[7] = 0x26;
-
 
         // Configure une nouvelle connection sur la xbee, de type "64-bit Data" (bidirectionnelle) avec l'addresse du drone pour destination
         if ((ret = xbee_conNew(xbee, &con, "64-bit Data", &drone_address)) != XBEE_ENONE) {

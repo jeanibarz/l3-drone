@@ -47,7 +47,9 @@ MainWindow::MainWindow(QWidget *parent) :
     }
 
     counter = 0;
-    timer.start(100);
+    rx_packets_counter = 0;
+    tx_packets_counter = 0;
+    timer.start(50);
 }
 
 MainWindow::~MainWindow()
@@ -58,14 +60,14 @@ MainWindow::~MainWindow()
 xbee_err MainWindow::doWork()
 {
     ++counter;
-    if(counter%10==0) counter = 0;
-    ui->dial->setValue(counter);
+    if(counter%100==0) counter = 0;
+    ui->progressBar->setValue(counter);
 
     // process each packet until Xbee buffer is empty
     int remainingPackets;
-    struct xbee_pkt *pkt;
+    struct xbee_pkt *pkt = NULL;
     xbee_err ret;
-
+/*
     do
     {
           if ((ret = xbee_conRx(con, &pkt, &remainingPackets)) != XBEE_ENONE)
@@ -74,6 +76,9 @@ xbee_err MainWindow::doWork()
               return ret;
           }
 
+          if(pkt == NULL) break;
+
+          ++rx_packets_counter;
           if(pkt->dataLen == sizeof(rxPacket)) {
               struct rxPacket * rx_data = new rxPacket(pkt->data);
               printf("\t\tpacket_clock:%d\n", rx_data->packet_clock_);
@@ -86,5 +91,34 @@ xbee_err MainWindow::doWork()
           }
     } while (remainingPackets > 0);
     // process refreshing window
+*/
+    latency_buffer[latency_index] = tx_packets_counter%40;
+    latency_index = (latency_index+1)%latency_buffer_length;
+
+    ++tx_packets_counter;
+
+    ui->spinBox_avg_latency->setValue(calculateAvgLatency());
+    ui->spinBox_tx_packets->setValue(tx_packets_counter);
+    ui->spinBox_rx_packets->setValue(rx_packets_counter);
+
     return XBEE_ENONE;
+}
+
+void MainWindow::closeEvent(QCloseEvent *event)
+{
+
+}
+
+uint16_t MainWindow::calculateAvgLatency()
+{
+    uint8_t i;
+    uint16_t average = 0;
+
+    for(i = 0; i < latency_buffer_length; ++i)
+    {
+        average += latency_buffer[i];
+    }
+    average /= latency_buffer_length;
+
+    return average;
 }
