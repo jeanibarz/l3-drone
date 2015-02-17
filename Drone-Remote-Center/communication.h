@@ -32,6 +32,7 @@ struct rxPacket
     struct Accel accel_;
 
     rxPacket(uint8_t const * const data);
+    void print();
 };
 
 /* txPacket is the structure of the packets to emit to the Drone.

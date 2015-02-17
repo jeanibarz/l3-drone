@@ -16,6 +16,14 @@ rxPacket::rxPacket(uint8_t const * const data) {
     accel_.vertical_ = ( (uint16_t)data[accel_index+4]<<8 ) + ( (uint16_t)data[accel_index+5] );
 };
 
+void rxPacket::print()
+{
+    printf("\t\tpacket_clock:%d\n", packet_clock_);
+    printf("\t\tpower_charge:%d\n", power_charge_);
+    printf("\t\tgyro:(%d, %d, %d)\n", gyro_.roll_, gyro_.yaw_, gyro_.pitch_);
+    printf("\t\taccel:(%d, %d, %d)\n", accel_.longitudinal_, accel_.lateral_, accel_.vertical_);
+}
+
 txPacket::txPacket(uint8_t p3_ail, uint8_t p4_ele, uint8_t p5_rud, uint8_t p6_thr)
     : p3_ail_(p3_ail), p4_ele_(p4_ele), p5_rud_(p5_rud), p6_thr_(p6_thr)
 {

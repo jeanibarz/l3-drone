@@ -6,10 +6,11 @@
 #include <QMainWindow>
 #include <QTimer>
 #include <QTime>
+#include <QLabel>
 
 #include "libxbee3_v3.0.10/xbee.h"
 
-enum STATE : uint8_t { STARTING, CONNECTING, WORKING, DISCONNECTING, EMERGENCY };
+enum STATE { STARTING, CONNECTING, WORKING, DISCONNECTING, EMERGENCY };
 
 namespace Ui {
 class MainWindow;
@@ -27,6 +28,7 @@ private:
     Ui::MainWindow *ui;
     QTimer timer;
     QTime log_timer;
+    QLabel statusBar_current_state;
 
     uint8_t counter;
     uint32_t rx_packets_counter;
@@ -40,12 +42,13 @@ private:
     struct xbee_con *con;
     struct xbee_conAddress drone_address;
     xbee_err ret;
+    QString error_msg;
 
     void closeEvent(QCloseEvent *event);
     uint16_t calculateAvgLatency();
 
 private slots:
-    xbee_err doWork();
+    void doWork();
 };
 
 #endif // MAINWINDOW_H
