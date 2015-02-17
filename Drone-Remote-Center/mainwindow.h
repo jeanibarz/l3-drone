@@ -1,11 +1,15 @@
 #ifndef MAINWINDOW_H
 #define MAINWINDOW_H
 
-#include <QMainWindow>
-#include <QTimer>
 #include <stdint.h>
 
+#include <QMainWindow>
+#include <QTimer>
+#include <QTime>
+
 #include "libxbee3_v3.0.10/xbee.h"
+
+enum STATE : uint8_t { STARTING, CONNECTING, WORKING, DISCONNECTING, EMERGENCY };
 
 namespace Ui {
 class MainWindow;
@@ -22,12 +26,15 @@ public:
 private:
     Ui::MainWindow *ui;
     QTimer timer;
+    QTime log_timer;
+
     uint8_t counter;
-    uint32_t rx_packets_counter = 0;
-    uint32_t tx_packets_counter = 0;
-    uint16_t latency_buffer[20] = { 0 };
-    uint8_t latency_buffer_length = 20;
-    uint8_t latency_index = 0;
+    uint32_t rx_packets_counter;
+    uint32_t tx_packets_counter;
+    uint16_t latency_buffer[20];
+    uint8_t latency_buffer_length;
+    uint8_t latency_index;
+    uint8_t current_state;
 
     struct xbee *xbee;
     struct xbee_con *con;
