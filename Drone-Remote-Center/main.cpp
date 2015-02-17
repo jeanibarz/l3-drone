@@ -5,8 +5,9 @@
 #include <stdio.h>
 #include <stdlib.h>
 
+#include <unistd.h> // for the sleep function under windows and linux
+
 #if defined(WIN32)
-#include <unistd.h> // for the sleep function under windows (take arg in seconds)
 #include <windows.h> // for the Sleep function under windows (take arg in milliseconds)
 #endif
 
@@ -63,7 +64,7 @@ int main(int argc, char *argv[])
         if (ret) {
                 printf("txRet: %d\n", txRet);
         } else {
-                Sleep(1000);
+                usleep(1000*1000); //
         }
 
         // Ferme la connection "con"

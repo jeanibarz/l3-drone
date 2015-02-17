@@ -11,8 +11,7 @@ greaterThan(QT_MAJOR_VERSION, 4): QT += widgets
 TARGET = Drone-Remote-Center
 TEMPLATE = app
 
-win32:LIBS += "$$_PRO_FILE_PWD_/libxbee3_v3.0.10/lib/libxbee3.lib"
-linux:LIBS += lxbee
+FORMS    = mainwindow.ui
 
 SOURCES += main.cpp\
         mainwindow.cpp \
@@ -21,4 +20,8 @@ SOURCES += main.cpp\
 HEADERS  += mainwindow.h \
     communication.h
 
-FORMS    += mainwindow.ui
+win32:LIBS += -L$$PWD/libxbee3_v3.0.10/lib/ -lxbee
+else:linux: LIBS += -L$$PWD/libxbee3_v3.0.10/lib/ -lxbee
+
+INCLUDEPATH += $$PWD/libxbee3_v3.0.10/lib
+DEPENDPATH += $$PWD/libxbee3_v3.0.10/lib

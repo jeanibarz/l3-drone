@@ -1,2 +1,3 @@
 build-Drone-Remote-Center-Desktop-Debug/
+*.pro.user
 .gitignore~
