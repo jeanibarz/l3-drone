@@ -4,6 +4,8 @@
 #include "libxbee3_v3.0.10/xbee.h"
 #include "communication.h"
 
+#define XBEE_TEST 0
+
 MainWindow::MainWindow(QWidget *parent) :
     QMainWindow(parent),
     ui(new Ui::MainWindow)
@@ -22,28 +24,31 @@ MainWindow::MainWindow(QWidget *parent) :
        linux: use "/dev/ttyUSB0" or something like that instead of "COM8"
     */
 
-    // Configure l'utilisation du modele de librairie "xbee1", port usb "COM8", transmission 57600 b/s
-    if ((ret = xbee_setup(&xbee, "xbee1", "COM8", 57600)) != XBEE_ENONE) {
-            printf("ret: %d (%s)\n", ret, xbee_errorToStr(ret));
-            // return ret;
-    }
+    if(XBEE_TEST)
+    {
+        // Configure l'utilisation du modele de librairie "xbee1", port usb "COM8", transmission 57600 b/s
+        if ((ret = xbee_setup(&xbee, "xbee1", "COM8", 57600)) != XBEE_ENONE) {
+                printf("ret: %d (%s)\n", ret, xbee_errorToStr(ret));
+                // return ret;
+        }
 
-    // Configuration de l'addresse 64 bits du drone
-    memset(&drone_address, 0, sizeof(drone_address));
-    drone_address.addr64_enabled = 1;
-    drone_address.addr64[0] = 0x00;
-    drone_address.addr64[1] = 0x13;
-    drone_address.addr64[2] = 0xA2;
-    drone_address.addr64[3] = 0x00;
-    drone_address.addr64[4] = 0x40;
-    drone_address.addr64[5] = 0x08;
-    drone_address.addr64[6] = 0x18;
-    drone_address.addr64[7] = 0x26;
+        // Configuration de l'addresse 64 bits du drone
+        memset(&drone_address, 0, sizeof(drone_address));
+        drone_address.addr64_enabled = 1;
+        drone_address.addr64[0] = 0x00;
+        drone_address.addr64[1] = 0x13;
+        drone_address.addr64[2] = 0xA2;
+        drone_address.addr64[3] = 0x00;
+        drone_address.addr64[4] = 0x40;
+        drone_address.addr64[5] = 0x08;
+        drone_address.addr64[6] = 0x18;
+        drone_address.addr64[7] = 0x26;
 
-    // Configure une nouvelle connection sur la xbee, de type "64-bit Data" (bidirectionnelle) avec l'addresse du drone pour destination
-    if ((ret = xbee_conNew(xbee, &con, "64-bit Data", &drone_address)) != XBEE_ENONE) {
-            xbee_log(xbee, -1, "xbee_conNew() returned: %d (%s)", ret, xbee_errorToStr(ret));
-            // return ret;
+        // Configure une nouvelle connection sur la xbee, de type "64-bit Data" (bidirectionnelle) avec l'addresse du drone pour destination
+        if ((ret = xbee_conNew(xbee, &con, "64-bit Data", &drone_address)) != XBEE_ENONE) {
+                xbee_log(xbee, -1, "xbee_conNew() returned: %d (%s)", ret, xbee_errorToStr(ret));
+                // return ret;
+        }
     }
 
     counter = 0;

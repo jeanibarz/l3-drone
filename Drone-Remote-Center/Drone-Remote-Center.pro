@@ -20,7 +20,7 @@ SOURCES += main.cpp\
 HEADERS  += mainwindow.h \
     communication.h
 
-win32:LIBS += -L$$PWD/libxbee3_v3.0.10/lib/ -lxbee
+win32:LIBS += "$$PWD/libxbee3_v3.0.10/lib/libxbee3.lib"
 else:linux: LIBS += -L$$PWD/libxbee3_v3.0.10/lib/ -lxbee
 
 INCLUDEPATH += $$PWD/libxbee3_v3.0.10/lib
