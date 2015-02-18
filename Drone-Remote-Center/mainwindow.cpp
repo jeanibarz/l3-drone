@@ -4,6 +4,8 @@
 #include <QMessageBox>
 #include <QCloseEvent>
 #include <boost/format.hpp>
+#include <boost/filesystem.hpp>
+#include <boost/lexical_cast.hpp>
 
 #include "libxbee3_v3.0.10/xbee.h"
 #include "communication.h"
@@ -14,7 +16,7 @@ MainWindow::MainWindow(QWidget *parent) :
     QMainWindow(parent), ui(new Ui::MainWindow),
     rx_packets_counter(0), tx_packets_counter(0),
     latency_buffer_length(20), latency_index(0),
-    current_state(STARTING), error_msg(QString(""))
+    current_state(STARTING), error_msg(QString("")), logging(false)
 {
     calloc(latency_buffer_length,sizeof(latency_buffer[0]));
 
@@ -39,6 +41,7 @@ MainWindow::MainWindow(QWidget *parent) :
     tx_packets_counter = 0;
     timer.start(50);
     log_timer.start();
+
 }
 
 MainWindow::~MainWindow()
@@ -182,8 +185,8 @@ void MainWindow::doWork()
 
 uint16_t MainWindow::calculateAvgLatency()
 {
-    uint8_t i;
-    uint16_t average = 0;
+    u_int8_t i;
+    u_int16_t average = 0;
 
     for(i = 0; i < latency_buffer_length; ++i)
     {
@@ -206,10 +209,71 @@ void MainWindow::closeEvent(QCloseEvent *event)
             current_state = DISCONNECTING;
             doWork();
             if ((ret = xbee_shutdown(xbee)) != XBEE_ENONE) {
-                QString(boost::str(boost::format("xbee_shutdown() error (%d - %s)\n") % ret % xbee_errorToStr(ret)).c_str());
+                error_msg = QString(boost::str(boost::format("xbee_shutdown() error (%d - %s)\n") % ret % xbee_errorToStr(ret)).c_str());
                 // we don't care except if we need to log the error in a file
             }
         }
+        if(logging && log_filestream != NULL) {
+            fclose(log_filestream);
+        }
         event->accept();
+    }
+}
+
+void MainWindow::on_pushButton_start_logging_clicked()
+{
+    logging = true;
+    boost::filesystem::path log_dir_path("./" + ui->lineEdit_log_dir_path->text().toStdString());
+    if(!boost::filesystem::exists(log_dir_path))
+    {
+        if (!boost::filesystem::create_directory(log_dir_path)) {
+            error_msg = "create_directory() error";
+            current_state = EMERGENCY;
+            return;
+        }
+    }
+
+    uint8_t log_number = 1;
+    std::string log_filename;
+    while(true) {
+        log_filename = log_dir_path.string() + "/log" + boost::lexical_cast<std::string>((int)log_number) + ".txt";
+        if(!boost::filesystem::exists(boost::filesystem::path(log_filename))
+        ) {
+            break;
+        }
+        ++log_number;
+
+        if(log_number == 255) {
+            error_msg = "log_filename infinite loop while ?";
+            current_state = EMERGENCY;
+            return;
+        }
+    }
+
+    log_filestream = fopen(log_filename.c_str(), "w");
+    if (log_filestream == NULL) {
+        error_msg = "fopen() error (invalid handle)";
+        current_state = EMERGENCY;
+        return;
+    }
+    else
+    {
+        logging = true;
+        std::string logging_state_text = "Logging to " + log_filename;
+        ui->lineEdit_logging_state->setText(logging_state_text.c_str());
+        ui->pushButton_start_logging->setText("START NEW");
+        ui->pushButton_stop_logging->setEnabled(true);
+        return;
+    }
+}
+
+void MainWindow::on_pushButton_stop_logging_clicked()
+{
+    if(logging) {
+        logging = false;
+        fclose(log_filestream);
+        ui->lineEdit_logging_state->setText("Idle");
+        ui->pushButton_start_logging->setText("START");
+        ui->pushButton_stop_logging->setEnabled(false);
     }
 }

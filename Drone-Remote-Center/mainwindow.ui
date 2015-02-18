@@ -733,8 +733,8 @@
    <widget class="QGroupBox" name="groupBox_6">
     <property name="geometry">
      <rect>
-      <x>20</x>
-      <y>350</y>
+      <x>340</x>
+      <y>190</y>
       <width>251</width>
       <height>121</height>
      </rect>
@@ -822,55 +822,82 @@
    <widget class="QGroupBox" name="groupBox_7">
     <property name="geometry">
      <rect>
-      <x>330</x>
-      <y>200</y>
-      <width>271</width>
-      <height>211</height>
+      <x>20</x>
+      <y>340</y>
+      <width>421</width>
+      <height>181</height>
      </rect>
     </property>
     <property name="title">
      <string>DATA LOGGING</string>
     </property>
     <layout class="QGridLayout" name="gridLayout_4">
-     <item row="1" column="1">
-      <widget class="QLineEdit" name="lineEdit">
+     <item row="3" column="1">
+      <layout class="QHBoxLayout" name="horizontalLayout_5">
+       <item>
+        <widget class="QPushButton" name="pushButton_stop_logging">
+         <property name="enabled">
+          <bool>false</bool>
+         </property>
+         <property name="text">
+          <string>STOP</string>
+         </property>
+        </widget>
+       </item>
+       <item>
+        <spacer name="horizontalSpacer">
+         <property name="orientation">
+          <enum>Qt::Horizontal</enum>
+         </property>
+         <property name="sizeHint" stdset="0">
+          <size>
+           <width>40</width>
+           <height>20</height>
+          </size>
+         </property>
+        </spacer>
+       </item>
+      </layout>
+     </item>
+     <item row="0" column="1">
+      <widget class="QLineEdit" name="lineEdit_log_dir_path">
        <property name="text">
-        <string>test</string>
+        <string>log</string>
        </property>
        <property name="readOnly">
         <bool>false</bool>
        </property>
       </widget>
      </item>
-     <item row="1" column="0">
+     <item row="0" column="0">
       <widget class="QLabel" name="label_37">
        <property name="text">
         <string>Folder</string>
        </property>
       </widget>
      </item>
-     <item row="3" column="0">
+     <item row="2" column="0">
       <widget class="QLabel" name="label_40">
        <property name="text">
         <string>Status</string>
        </property>
       </widget>
      </item>
-     <item row="4" column="0">
-      <widget class="QPushButton" name="pushButton_2">
+     <item row="3" column="0">
+      <widget class="QPushButton" name="pushButton_start_logging">
        <property name="text">
         <string>START</string>
        </property>
       </widget>
      </item>
-     <item row="2" column="0">
+     <item row="1" column="0">
       <widget class="QLabel" name="label_39">
        <property name="text">
         <string>Time</string>
        </property>
       </widget>
      </item>
-     <item row="2" column="1">
+     <item row="1" column="1">
       <widget class="QTimeEdit" name="timeEdit_log_time">
        <property name="currentSection">
         <enum>QDateTimeEdit::HourSection</enum>
@@ -887,8 +914,8 @@
        </property>
       </widget>
      </item>
-     <item row="3" column="1">
-      <widget class="QLineEdit" name="lineEdit_2">
+     <item row="2" column="1">
+      <widget class="QLineEdit" name="lineEdit_logging_state">
        <property name="text">
         <string>Idle</string>
        </property>
@@ -898,27 +925,6 @@
       </widget>
      </item>
      <item row="4" column="1">
-      <widget class="QPushButton" name="pushButton_3">
-       <property name="text">
-        <string>STOP</string>
-       </property>
-      </widget>
-     </item>
-     <item row="0" column="0">
-      <widget class="QLabel" name="label_41">
-       <property name="text">
-        <string>Working path</string>
-       </property>
-      </widget>
-     </item>
-     <item row="0" column="1">
-      <widget class="QPushButton" name="pushButton_6">
-       <property name="text">
-        <string>Browse</string>
-       </property>
-      </widget>
-     </item>
-     <item row="5" column="1">
       <spacer name="verticalSpacer_3">
        <property name="orientation">
         <enum>Qt::Vertical</enum>

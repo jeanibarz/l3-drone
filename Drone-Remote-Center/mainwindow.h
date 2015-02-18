@@ -44,11 +44,16 @@ private:
     xbee_err ret;
     QString error_msg;
 
+    bool logging;
+    FILE * log_filestream;
+
     void closeEvent(QCloseEvent *event);
     uint16_t calculateAvgLatency();
 
 private slots:
     void doWork();
+    void on_pushButton_start_logging_clicked();
+    void on_pushButton_stop_logging_clicked();
 };
 
 #endif // MAINWINDOW_H
