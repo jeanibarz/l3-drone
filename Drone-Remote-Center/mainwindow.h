@@ -11,6 +11,7 @@
 #include <boost/filesystem.hpp>
 
 #include "libxbee3_v3.0.10/xbee.h"
+#include "communication.h"
 
 enum STATE { UNDEFINED, STARTING, CONNECTING, WORKING, DISCONNECTING, EMERGENCY };
 
@@ -34,9 +35,15 @@ private:
     uint8_t counter;
     uint32_t rx_packets_counter;
     uint32_t tx_packets_counter;
+
+    uint8_t max_packet_clock;
+    uint8_t min_packet_clock;
+    std::list<rxPacket> packets_buffer;
+
     uint16_t latency_buffer[20];
     uint8_t latency_buffer_length;
     uint8_t latency_index;
+
     uint8_t current_state;
     uint8_t last_state;
 
@@ -66,6 +73,9 @@ private:
     void printToExecLog(std::string text);
     void printToDataLog(std::string text);
     void printToFile(FILE* filestream, std::string text);
+
+    void processPacketToData(rxPacket pkt);
+    void processPacketsBuffer();
 
     void setNewError(std::string text);
 

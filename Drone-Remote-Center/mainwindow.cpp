@@ -141,26 +141,41 @@ void MainWindow::doWork()
 
                 do // loop until received packets buffer is empty
                 {
-                      if ((ret = xbee_conRx(con, &pkt, &remainingPackets)) != XBEE_ENONE) {
-                          setNewError(boost::str(boost::format("xbee_conRx() error (%d : %s)\n") % ret % xbee_errorToStr(ret)).c_str());
-                          current_state = EMERGENCY;
-                          return;
-                      }
+                    if ((ret = xbee_conRx(con, &pkt, &remainingPackets)) != XBEE_ENONE) {
+                        setNewError(boost::str(boost::format("xbee_conRx() error (%d : %s)\n") % ret % xbee_errorToStr(ret)).c_str());
+                        current_state = EMERGENCY;
+                        return;
+                    }
 
-                      if(pkt == NULL) break; // just in case...
+                    if(pkt == NULL) break; // just for safety...
 
-                      ++rx_packets_counter;
-                      if(pkt->dataLen == sizeof(rxPacket)) {
-                          struct rxPacket * rx_data = new rxPacket(pkt->data);
-                          rx_data->print();
-                          delete rx_data;
+                    ++rx_packets_counter;
+                    if(pkt->dataLen == sizeof(rxPacket)) {
+                        struct rxPacket rx_data(pkt->data);
 
-                          if ((ret = xbee_pktFree(pkt)) != XBEE_ENONE) {
-                              setNewError(boost::str(boost::format("xbee_pktFree() error (%d : %s)\n") % ret % xbee_errorToStr(ret)).c_str());
-                              current_state = EMERGENCY;
-                              return;
-                          }
-                      }
+                        // DO SOMETHING WITH PACKETS
+                        if(rx_data.packet_clock_ > max_packet_clock ||
+                           ((int)max_packet_clock - (int)rx_data.packet_clock_) > 128) { // check if it's the most recent packet received or if it's a late packet
+                            max_packet_clock = rx_data.packet_clock_;
+                        }
+                        if(min_packet_clock == max_packet_clock) {
+                            // write packet to data
+                        }
+                        else if(rx_data.packet_clock_ != max_packet_clock) { // it's a late packet
+                            printToExecLog(boost::str(boost::format("Late packet received (max_clock_counter = %d, packet_clock = %d\n")
+                                                      % max_packet_clock % rx_data.packet_clock_));
+                            packets_buffer.push_back(rx_data);
+
+                            // check if the buffered packets can fill the data from min_packet_clock
+                            processPacketsBuffer();
+                        }
+
+                        if ((ret = xbee_pktFree(pkt)) != XBEE_ENONE) {
+                            setNewError(boost::str(boost::format("xbee_pktFree() error (%d : %s)\n") % ret % xbee_errorToStr(ret)).c_str());
+                            current_state = EMERGENCY;
+                            return;
+                        }
+                    }
                 } while (remainingPackets > 0);
             }
             {
@@ -382,6 +397,44 @@ void MainWindow::printToFile(FILE* filestream, std::string text)
     {
         fputs(text.c_str(), filestream);
         fflush(filestream);
+    }
+}
+
+void MainWindow::processPacketToData(rxPacket pkt) {
+    printToDataLog(boost::str(boost::format("%d\t%d\t%d\t%d\t%d\t%d\t%d")
+                              % (int)pkt.packet_clock_
+                              % (int)pkt.gyro_.roll_
+                              % (int)pkt.gyro_.yaw_
+                              % (int)pkt.gyro_.pitch_
+                              % (int)pkt.accel_.longitudinal_
+                              % (int)pkt.accel_.lateral_
+                              % (int)pkt.accel_.vertical_));
+}
+
+void MainWindow::processPacketsBuffer() {
+    bool found_min;
+    while(true) {
+        found_min = false;
+        for(std::list<rxPacket>::iterator it = packets_buffer.begin(); it != packets_buffer.end(); ++it) {
+            if(it->packet_clock_ == min_packet_clock) {
+                printToExecLog(boost::str(boost::format("Latest missing packet_clock = %d present in packets_buffer, writing it to data_log...\n")
+                                          % min_packet_clock));
+                // It's the latest packet missing : we can write it to data_log, incremenet min_packet_clock, and remove it from the packets_buffer
+                processPacketToData(*it);
+                packets_buffer.erase(it);
+                ++min_packet_clock;
+                found_min = true;
+                break; // we need to exit the loop because list size and iterator will change after removing the packet
+            }
+        }
+        if(!found_min) {
+            if(packets_buffer.size() == 10) {
+                ++min_packet_clock; // we loop until we don't find any packet in the packets_buffer that verify the min_packet_clock value or until the packet_buffer is less then 10
+                printToExecLog(boost::str(boost::format("The packets_buffer is full and we still miss the packet_clock = %d, ignoring it...\n")
+                                      % min_packet_clock));
+            }
+            else break;
+        }
     }
 }
 
