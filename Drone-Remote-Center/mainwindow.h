@@ -8,6 +8,8 @@
 #include <QTime>
 #include <QLabel>
 
+#include <boost/filesystem.hpp>
+
 #include "libxbee3_v3.0.10/xbee.h"
 
 enum STATE { STARTING, CONNECTING, WORKING, DISCONNECTING, EMERGENCY };
@@ -46,6 +48,7 @@ private:
 
     bool logging;
     FILE * log_filestream;
+    boost::filesystem::path log_filepath;
 
     void closeEvent(QCloseEvent *event);
     uint16_t calculateAvgLatency();

@@ -150,6 +150,7 @@ void MainWindow::doWork()
                 ui->spinBox_tx_packets->setValue(tx_packets_counter); // to be removed when testing Xbee
                 ui->spinBox_rx_packets->setValue(rx_packets_counter); // to be removed when testing Xbee
                 ui->timeEdit_log_time->setTime(QTime(0,0,0,log_timer.elapsed())); // why this doesn't work ?
+
             }
             break;
         }
@@ -171,6 +172,13 @@ void MainWindow::doWork()
 
             statusBar_current_state.setText(text);
 
+            // FOR TEST
+            if (logging) {
+                fprintf(log_filestream, "EMERGENCY\n");
+                fflush(log_filestream);
+                ui->timeEdit_log_time->setTime(QTime(0,0,0,0).addMSecs(log_timer.elapsed()));
+                ui->doubleSpinBox_log_size->setValue(boost::filesystem::file_size(log_filepath)/1024.0); // 1 kb = 1024 bytes
+            }
             break;
         }
         default: // we're not supposed to be here
@@ -259,10 +267,16 @@ void MainWindow::on_pushButton_start_logging_clicked()
     else
     {
         logging = true;
-        std::string logging_state_text = "Logging to " + log_filename;
-        ui->lineEdit_logging_state->setText(logging_state_text.c_str());
+        std::string log_state_text = "Logging to " + log_filename;
+        log_filepath = boost::filesystem::path(log_filename);
+        ui->lineEdit_log_state->setText(log_state_text.c_str());
         ui->pushButton_start_logging->setText("START NEW");
         ui->pushButton_stop_logging->setEnabled(true);
+        ui->doubleSpinBox_log_size->setEnabled(true);
+        log_timer = QTime(0,0,0,0);
+        log_timer.start();
+        ui->timeEdit_log_time->setTime(log_timer);
+        ui->timeEdit_log_time->setEnabled(true);
         return;
     }
 }
@@ -272,8 +286,12 @@ void MainWindow::on_pushButton_stop_logging_clicked()
     if(logging) {
         logging = false;
         fclose(log_filestream);
-        ui->lineEdit_logging_state->setText("Idle");
+        ui->lineEdit_log_state->setText("Idle");
         ui->pushButton_start_logging->setText("START");
         ui->pushButton_stop_logging->setEnabled(false);
+        ui->doubleSpinBox_log_size->setValue(0);
+        ui->doubleSpinBox_log_size->setEnabled(false);
+        ui->timeEdit_log_time->setTime(QTime(0,0,0,0));
+        ui->timeEdit_log_time->setEnabled(false);
     }
 }
