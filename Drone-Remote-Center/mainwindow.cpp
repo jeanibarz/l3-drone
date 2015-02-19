@@ -154,12 +154,15 @@ void MainWindow::doWork()
                         struct rxPacket rx_data(pkt->data);
 
                         // DO SOMETHING WITH PACKETS
-                        if(rx_data.packet_clock_ > max_packet_clock ||
-                           ((int)max_packet_clock - (int)rx_data.packet_clock_) > 128) { // check if it's the most recent packet received or if it's a late packet
+                        if( rx_data.packet_clock_ > max_packet_clock || ((int)max_packet_clock - (int)rx_data.packet_clock_) > 128 ) { // check if it's the most recent packet received or if it's a late packet
                             max_packet_clock = rx_data.packet_clock_;
                         }
-                        if(min_packet_clock == max_packet_clock) {
-                            // write packet to data
+                        if( (rx_data.packet_clock_ < min_packet_clock && ((int)min_packet_clock - (int)rx_data.packet_clock_) < 128) ||
+                            (rx_data.packet_clock_ > min_packet_clock && ((int)rx_data.packet_clock_ - (int)min_packet_clock) > 128) ) {
+                            // We receive a late packet that has been considered lost : ignoring it
+                            printToExecLog(boost::str(boost::format("Late packet received but already considered lost (min_clock_counter = %d, packet_clock = %d\n")
+                                                      % min_packet_clock % rx_data.packet_clock_));
+                            // doing nothing...
                         }
                         else if(rx_data.packet_clock_ != max_packet_clock) { // it's a late packet
                             printToExecLog(boost::str(boost::format("Late packet received (max_clock_counter = %d, packet_clock = %d\n")
