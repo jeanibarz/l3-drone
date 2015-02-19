@@ -835,7 +835,7 @@
      <item row="4" column="1">
       <layout class="QHBoxLayout" name="horizontalLayout_5">
        <item>
-        <widget class="QPushButton" name="pushButton_stop_logging">
+        <widget class="QPushButton" name="pushButton_stop_data_logging">
          <property name="enabled">
           <bool>false</bool>
          </property>
@@ -866,7 +866,7 @@
       </layout>
      </item>
      <item row="0" column="1">
-      <widget class="QLineEdit" name="lineEdit_log_dir_path">
+      <widget class="QLineEdit" name="lineEdit_data_log_dir_path">
        <property name="text">
         <string>log</string>
        </property>
@@ -890,7 +890,7 @@
       </widget>
      </item>
      <item row="4" column="0">
-      <widget class="QPushButton" name="pushButton_start_logging">
+      <widget class="QPushButton" name="pushButton_start_data_logging">
        <property name="minimumSize">
         <size>
          <width>120</width>
@@ -910,7 +910,7 @@
       </widget>
      </item>
      <item row="1" column="1">
-      <widget class="QTimeEdit" name="timeEdit_log_time">
+      <widget class="QTimeEdit" name="timeEdit_data_log_time">
        <property name="enabled">
         <bool>false</bool>
        </property>
@@ -922,7 +922,7 @@
        </property>
        <property name="dateTime">
         <datetime>
-         <hour>1</hour>
+         <hour>0</hour>
          <minute>0</minute>
          <second>0</second>
          <year>2000</year>
@@ -938,7 +938,7 @@
        </property>
        <property name="time">
         <time>
-         <hour>1</hour>
+         <hour>0</hour>
          <minute>0</minute>
          <second>0</second>
         </time>
@@ -946,7 +946,7 @@
       </widget>
      </item>
      <item row="3" column="1">
-      <widget class="QLineEdit" name="lineEdit_log_state">
+      <widget class="QLineEdit" name="lineEdit_data_log_state">
        <property name="text">
         <string>Idle</string>
        </property>
@@ -976,7 +976,7 @@
       </widget>
      </item>
      <item row="2" column="1">
-      <widget class="QDoubleSpinBox" name="doubleSpinBox_log_size">
+      <widget class="QDoubleSpinBox" name="doubleSpinBox_data_log_size">
        <property name="enabled">
         <bool>false</bool>
        </property>

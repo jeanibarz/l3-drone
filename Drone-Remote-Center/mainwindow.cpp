@@ -16,7 +16,9 @@ MainWindow::MainWindow(QWidget *parent) :
     QMainWindow(parent), ui(new Ui::MainWindow),
     rx_packets_counter(0), tx_packets_counter(0),
     latency_buffer_length(20), latency_index(0),
-    current_state(STARTING), error_msg(QString("")), logging(false)
+    current_state(STARTING), last_state(UNDEFINED), error_msg(QString("")),
+    data_log_filepath(boost::filesystem::path("./")), data_log_filestream(NULL),
+    exec_log_filepath(boost::filesystem::path("./")), exec_log_filestream(NULL)
 {
     calloc(latency_buffer_length,sizeof(latency_buffer[0]));
 
@@ -40,7 +42,7 @@ MainWindow::MainWindow(QWidget *parent) :
     rx_packets_counter = 0;
     tx_packets_counter = 0;
     timer.start(50);
-    log_timer.start();
+    data_log_timer.start();
 
 }
 
@@ -51,6 +53,26 @@ MainWindow::~MainWindow()
 
 void MainWindow::doWork()
 {
+    // ACTIONS TO DO DURING TRANSITIONS
+    if(current_state != last_state)
+    {
+        uint8_t from_state = last_state;
+        uint8_t to_state = current_state;
+
+        last_state = current_state;
+
+        if(from_state == UNDEFINED && to_state == STARTING)
+        {
+            initExecLogging();
+        }
+
+        printToExecLog(boost::str(boost::format("Transition from state %s to state %s\n")
+                       % state_toString(from_state) % state_toString(to_state)));
+
+        // TRANSITIONS ACTIONS TO DO
+    }
+
+    // ACTIONS TO DO IN CURRENT STATE
     switch(current_state)
     {
         case STARTING:
@@ -67,7 +89,7 @@ void MainWindow::doWork()
 
             // Configure l'utilisation du modele de librairie "xbee1", port usb "COM8", transmission 57600 b/s
             if ((ret = xbee_setup(&xbee, "xbee1", "COM8", 57600)) != XBEE_ENONE) {
-                error_msg = QString(boost::str(boost::format("xbee_setup() error (%d : %s)\n") % ret % xbee_errorToStr(ret)).c_str());
+                setNewError(boost::str(boost::format("xbee_setup() error (%d : %s)\n") % ret % xbee_errorToStr(ret)));
                 current_state = EMERGENCY;
                 return;
             }
@@ -82,7 +104,7 @@ void MainWindow::doWork()
 
             // Configure une nouvelle connection sur la xbee, de type "64-bit Data" (bidirectionnelle) avec l'addresse du drone pour destination
             if ((ret = xbee_conNew(xbee, &con, "64-bit Data", &drone_address)) != XBEE_ENONE) {
-                error_msg = QString(boost::str(boost::format("xbee_conNew() error (%d : %s)\n") % ret % xbee_errorToStr(ret)).c_str());
+                setNewError(boost::str(boost::format("xbee_conNew() error (%d : %s)\n") % ret % xbee_errorToStr(ret)).c_str());
                 current_state = EMERGENCY;
                 return;
             }
@@ -103,7 +125,7 @@ void MainWindow::doWork()
             { // UPDATE CONNECTION INFORMATIONS (RX/TX PACKETS)
                 struct xbee_conInfo conInfo;
                 if ((ret = xbee_conInfoGet(con, &conInfo)) != XBEE_ENONE) {
-                    error_msg = QString(boost::str(boost::format("xbee_conInfoGet() error (%d : %s)\n") % ret % xbee_errorToStr(ret)).c_str());
+                    setNewError(boost::str(boost::format("xbee_conInfoGet() error (%d : %s)\n") % ret % xbee_errorToStr(ret)).c_str());
                     current_state = EMERGENCY;
                     return;
                 }
@@ -118,7 +140,7 @@ void MainWindow::doWork()
                 do // loop until received packets buffer is empty
                 {
                       if ((ret = xbee_conRx(con, &pkt, &remainingPackets)) != XBEE_ENONE) {
-                          error_msg = QString(boost::str(boost::format("xbee_conRx() error (%d : %s)\n") % ret % xbee_errorToStr(ret)).c_str());
+                          setNewError(boost::str(boost::format("xbee_conRx() error (%d : %s)\n") % ret % xbee_errorToStr(ret)).c_str());
                           current_state = EMERGENCY;
                           return;
                       }
@@ -132,7 +154,7 @@ void MainWindow::doWork()
                           delete rx_data;
 
                           if ((ret = xbee_pktFree(pkt)) != XBEE_ENONE) {
-                              error_msg = QString(boost::str(boost::format("xbee_pktFree() error (%d : %s)\n") % ret % xbee_errorToStr(ret)).c_str());
+                              setNewError(boost::str(boost::format("xbee_pktFree() error (%d : %s)\n") % ret % xbee_errorToStr(ret)).c_str());
                               current_state = EMERGENCY;
                               return;
                           }
@@ -149,7 +171,7 @@ void MainWindow::doWork()
                 ui->spinBox_avg_latency->setValue(calculateAvgLatency());
                 ui->spinBox_tx_packets->setValue(tx_packets_counter); // to be removed when testing Xbee
                 ui->spinBox_rx_packets->setValue(rx_packets_counter); // to be removed when testing Xbee
-                ui->timeEdit_log_time->setTime(QTime(0,0,0,log_timer.elapsed())); // why this doesn't work ?
+                ui->timeEdit_data_log_time->setTime(QTime(0,0,0,data_log_timer.elapsed())); // why this doesn't work ?
 
             }
             break;
@@ -158,7 +180,7 @@ void MainWindow::doWork()
         {
             statusBar_current_state.setText(QString("DISCONNECTING"));
             if ((ret = xbee_conEnd(con)) != XBEE_ENONE) {
-                error_msg = QString(boost::str(boost::format("xbee_conEnd() error (%d : %s)\n") % ret % xbee_errorToStr(ret)).c_str());
+                setNewError(boost::str(boost::format("xbee_conEnd() error (%d : %s)\n") % ret % xbee_errorToStr(ret)).c_str());
                 current_state = EMERGENCY;
                 return;
             }
@@ -173,20 +195,19 @@ void MainWindow::doWork()
             statusBar_current_state.setText(text);
 
             // FOR TEST
-            if (logging) {
-                fprintf(log_filestream, "EMERGENCY\n");
-                fflush(log_filestream);
-                ui->timeEdit_log_time->setTime(QTime(0,0,0,0).addMSecs(log_timer.elapsed()));
-                ui->doubleSpinBox_log_size->setValue(boost::filesystem::file_size(log_filepath)/1024.0); // 1 kb = 1024 bytes
+            if (data_log_filestream) {
+                printToDataLog("DATA\n");
+                ui->timeEdit_data_log_time->setTime(QTime(0,0,0,0).addMSecs(data_log_timer.elapsed()));
+                ui->doubleSpinBox_data_log_size->setValue(boost::filesystem::file_size(data_log_filepath)/1024.0); // 1 kb = 1024 bytes
             }
             break;
         }
+        case UNDEFINED:
         default: // we're not supposed to be here
         {
-            error_msg = QString("Unexpected state");
+            setNewError("Unexpected state");
             current_state = EMERGENCY;
             return;
-            break;
         }
     };
 }
@@ -213,85 +234,153 @@ void MainWindow::closeEvent(QCloseEvent *event)
     if (resBtn != QMessageBox::Yes) {
         event->ignore();
     } else {
-        if(xbee) {
+        printToExecLog("Close event triggered : exiting\n");
+        if(xbee_validate(xbee) == XBEE_ENONE) {
             current_state = DISCONNECTING;
             doWork();
             if ((ret = xbee_shutdown(xbee)) != XBEE_ENONE) {
-                error_msg = QString(boost::str(boost::format("xbee_shutdown() error (%d - %s)\n") % ret % xbee_errorToStr(ret)).c_str());
-                // we don't care except if we need to log the error in a file
+                printToExecLog(boost::str(boost::format("xbee_shutdown() error (%d - %s)\n") % ret % xbee_errorToStr(ret)).c_str());
             }
         }
-        if(logging && log_filestream != NULL) {
-            fclose(log_filestream);
-        }
+
+        closeDataLogging();
+        closeExecLogging();
         event->accept();
     }
 }
 
-void MainWindow::on_pushButton_start_logging_clicked()
+void MainWindow::on_pushButton_start_data_logging_clicked()
 {
-    logging = true;
-    boost::filesystem::path log_dir_path("./" + ui->lineEdit_log_dir_path->text().toStdString());
-    if(!boost::filesystem::exists(log_dir_path))
+    printToExecLog("Start data_logging clicked\n");
+
+    initDataLogging();
+    if(data_log_filestream)
     {
-        if (!boost::filesystem::create_directory(log_dir_path)) {
+        std::string data_log_state_text = "Logging to " + data_log_filename;
+        data_log_filepath = boost::filesystem::path(data_log_filename);
+        ui->lineEdit_data_log_state->setText(data_log_state_text.c_str());
+        ui->pushButton_start_data_logging->setText("START NEW");
+        ui->pushButton_stop_data_logging->setEnabled(true);
+        ui->doubleSpinBox_data_log_size->setEnabled(true);
+        data_log_timer = QTime(0,0,0,0);
+        data_log_timer.start();
+        ui->timeEdit_data_log_time->setTime(QTime(0,0,0,0));
+        ui->timeEdit_data_log_time->setEnabled(true);
+        return;
+    }
+}
+
+void MainWindow::on_pushButton_stop_data_logging_clicked()
+{
+    printToExecLog("Stop data_logging clicked\n");
+
+    closeDataLogging();
+
+    ui->lineEdit_data_log_state->setText("Idle");
+    ui->pushButton_start_data_logging->setText("START");
+    ui->pushButton_stop_data_logging->setEnabled(false);
+    ui->doubleSpinBox_data_log_size->setValue(0);
+    ui->doubleSpinBox_data_log_size->setEnabled(false);
+    ui->timeEdit_data_log_time->setTime(QTime(0,0,0,0));
+    ui->timeEdit_data_log_time->setEnabled(false);
+}
+
+std::string MainWindow::state_toString(uint8_t state_value) {
+    switch(state_value)
+    {
+        case STARTING: return "STARTING";
+        case CONNECTING: return "CONNECTING";
+        case WORKING: return "WORKING";
+        case DISCONNECTING: return "DISCONNECTING";
+        case EMERGENCY: return "EMERGENCY";
+        case UNDEFINED: return "UNDEFINED";
+        default:
+            error_msg = "state_toString() error (invalid state value)";
+            current_state = EMERGENCY;
+            return "-ERROR-";
+    }
+}
+
+void MainWindow::initExecLogging() {
+    if(exec_log_filestream) fclose(exec_log_filestream);
+    exec_log_filestream = fopen("./exec_log.txt", "w");
+
+    if(exec_log_filestream == NULL) {
+        error_msg = "fopen() error (invalid exec_log_filestream handle)";
+        current_state = EMERGENCY;
+    }
+}
+
+void MainWindow::initDataLogging() {
+    if(data_log_filestream) fclose(data_log_filestream);
+
+    printToExecLog("Init data logging...\n");
+    boost::filesystem::path data_log_dir_path("./" + ui->lineEdit_data_log_dir_path->text().toStdString());
+    if(!boost::filesystem::exists(data_log_dir_path))
+    {
+        if (!boost::filesystem::create_directory(data_log_dir_path)) {
             error_msg = "create_directory() error";
             current_state = EMERGENCY;
             return;
         }
     }
 
-    uint8_t log_number = 1;
-    std::string log_filename;
+    uint8_t data_log_number = 1;
+
     while(true) {
-        log_filename = log_dir_path.string() + "/log" + boost::lexical_cast<std::string>((int)log_number) + ".txt";
-        if(!boost::filesystem::exists(boost::filesystem::path(log_filename))
+        data_log_filename = data_log_dir_path.string() + "/log" + boost::lexical_cast<std::string>((int)data_log_number) + ".txt";
+        if(!boost::filesystem::exists(boost::filesystem::path(data_log_filename))
         ) {
             break;
         }
-        ++log_number;
+        ++data_log_number;
 
-        if(log_number == 255) {
-            error_msg = "log_filename infinite loop while ?";
+        if(data_log_number == 255) {
+            error_msg = "data_log_filename infinite loop while ?";
             current_state = EMERGENCY;
             return;
         }
     }
-
-    log_filestream = fopen(log_filename.c_str(), "w");
-    if (log_filestream == NULL) {
-        error_msg = "fopen() error (invalid handle)";
+    printToExecLog("Opening write filestream at " + data_log_filename + "\n");
+    data_log_filestream = fopen(data_log_filename.c_str(), "w");
+    if (data_log_filestream == NULL) {
+        error_msg = "fopen() error (invalid data_log_filestream handle)";
         current_state = EMERGENCY;
-        return;
-    }
-    else
-    {
-        logging = true;
-        std::string log_state_text = "Logging to " + log_filename;
-        log_filepath = boost::filesystem::path(log_filename);
-        ui->lineEdit_log_state->setText(log_state_text.c_str());
-        ui->pushButton_start_logging->setText("START NEW");
-        ui->pushButton_stop_logging->setEnabled(true);
-        ui->doubleSpinBox_log_size->setEnabled(true);
-        log_timer = QTime(0,0,0,0);
-        log_timer.start();
-        ui->timeEdit_log_time->setTime(log_timer);
-        ui->timeEdit_log_time->setEnabled(true);
-        return;
     }
 }
 
-void MainWindow::on_pushButton_stop_logging_clicked()
-{
-    if(logging) {
-        logging = false;
-        fclose(log_filestream);
-        ui->lineEdit_log_state->setText("Idle");
-        ui->pushButton_start_logging->setText("START");
-        ui->pushButton_stop_logging->setEnabled(false);
-        ui->doubleSpinBox_log_size->setValue(0);
-        ui->doubleSpinBox_log_size->setEnabled(false);
-        ui->timeEdit_log_time->setTime(QTime(0,0,0,0));
-        ui->timeEdit_log_time->setEnabled(false);
+void MainWindow::closeExecLogging() {
+    if(exec_log_filestream) fclose(exec_log_filestream);
+    exec_log_filestream = NULL;
+}
+
+void MainWindow::closeDataLogging() {
+    if(data_log_filestream) {
+        printToExecLog("Closing data_log_filestream\n");
+        fclose(data_log_filestream);
     }
+    data_log_filestream = NULL;
+}
+
+void MainWindow::printToExecLog(std::string text)
+{
+    printToFile(exec_log_filestream, QTime::currentTime().toString("HH:mm:ss").toStdString() + "\t" + text);
+}
+
+void MainWindow::printToDataLog(std::string text) {
+    printToFile(data_log_filestream, text);
+}
+
+void MainWindow::printToFile(FILE* filestream, std::string text)
+{
+    if(filestream)
+    {
+        fputs(text.c_str(), filestream);
+        fflush(filestream);
+    }
+}
+
+void MainWindow::setNewError(std::string text) {
+    printToExecLog(text);
+    error_msg = QString(text.c_str());
 }
