@@ -88,6 +88,7 @@ void MainWindow::doWork()
             //if(!XBEE_TEST) break;
 
             // Configure l'utilisation du modele de librairie "xbee1", port usb "COM8", transmission 57600 b/s
+            printToExecLog("Starting xbee_setup...\n");
             if ((ret = xbee_setup(&xbee, "xbee1", "COM8", 57600)) != XBEE_ENONE) {
                 setNewError(boost::str(boost::format("xbee_setup() error (%d : %s)\n") % ret % xbee_errorToStr(ret)));
                 current_state = EMERGENCY;
@@ -103,6 +104,7 @@ void MainWindow::doWork()
             statusBar_current_state.setText(QString("CONNECTING"));
 
             // Configure une nouvelle connection sur la xbee, de type "64-bit Data" (bidirectionnelle) avec l'addresse du drone pour destination
+            printToExecLog("Starting a new 64-bit bidirectionnal data connection to xbee...\n");
             if ((ret = xbee_conNew(xbee, &con, "64-bit Data", &drone_address)) != XBEE_ENONE) {
                 setNewError(boost::str(boost::format("xbee_conNew() error (%d : %s)\n") % ret % xbee_errorToStr(ret)).c_str());
                 current_state = EMERGENCY;
@@ -179,6 +181,8 @@ void MainWindow::doWork()
         case DISCONNECTING:
         {
             statusBar_current_state.setText(QString("DISCONNECTING"));
+
+            printToExecLog("Ending xbee connection...");
             if ((ret = xbee_conEnd(con)) != XBEE_ENONE) {
                 setNewError(boost::str(boost::format("xbee_conEnd() error (%d : %s)\n") % ret % xbee_errorToStr(ret)).c_str());
                 current_state = EMERGENCY;
@@ -194,12 +198,13 @@ void MainWindow::doWork()
 
             statusBar_current_state.setText(text);
 
-            // FOR TEST
+            // FOR TESTING PURPOSES ONLY : TO BE REMOVED
             if (data_log_filestream) {
                 printToDataLog("DATA\n");
                 ui->timeEdit_data_log_time->setTime(QTime(0,0,0,0).addMSecs(data_log_timer.elapsed()));
                 ui->doubleSpinBox_data_log_size->setValue(boost::filesystem::file_size(data_log_filepath)/1024.0); // 1 kb = 1024 bytes
             }
+
             break;
         }
         case UNDEFINED:
@@ -251,12 +256,12 @@ void MainWindow::closeEvent(QCloseEvent *event)
 
 void MainWindow::on_pushButton_start_data_logging_clicked()
 {
-    printToExecLog("Start data_logging clicked\n");
+    printToExecLog("Start data logging button clicked...\n");
 
     initDataLogging();
     if(data_log_filestream)
     {
-        std::string data_log_state_text = "Logging to " + data_log_filename;
+        std::string data_log_state_text = "Logging to : " + data_log_filename;
         data_log_filepath = boost::filesystem::path(data_log_filename);
         ui->lineEdit_data_log_state->setText(data_log_state_text.c_str());
         ui->pushButton_start_data_logging->setText("START NEW");
@@ -272,7 +277,7 @@ void MainWindow::on_pushButton_start_data_logging_clicked()
 
 void MainWindow::on_pushButton_stop_data_logging_clicked()
 {
-    printToExecLog("Stop data_logging clicked\n");
+    printToExecLog("Stop data logging button clicked...\n");
 
     closeDataLogging();
 
@@ -314,7 +319,7 @@ void MainWindow::initExecLogging() {
 void MainWindow::initDataLogging() {
     if(data_log_filestream) fclose(data_log_filestream);
 
-    printToExecLog("Init data logging...\n");
+    printToExecLog("Initializing data logging...\n");
     boost::filesystem::path data_log_dir_path("./" + ui->lineEdit_data_log_dir_path->text().toStdString());
     if(!boost::filesystem::exists(data_log_dir_path))
     {
@@ -328,7 +333,7 @@ void MainWindow::initDataLogging() {
     uint8_t data_log_number = 1;
 
     while(true) {
-        data_log_filename = data_log_dir_path.string() + "/log" + boost::lexical_cast<std::string>((int)data_log_number) + ".txt";
+        data_log_filename = data_log_dir_path.string() + "/data" + boost::lexical_cast<std::string>((int)data_log_number) + ".txt";
         if(!boost::filesystem::exists(boost::filesystem::path(data_log_filename))
         ) {
             break;
@@ -341,7 +346,7 @@ void MainWindow::initDataLogging() {
             return;
         }
     }
-    printToExecLog("Opening write filestream at " + data_log_filename + "\n");
+    printToExecLog("Opening write filestream for data logging at : " + data_log_filename + "\n");
     data_log_filestream = fopen(data_log_filename.c_str(), "w");
     if (data_log_filestream == NULL) {
         error_msg = "fopen() error (invalid data_log_filestream handle)";
@@ -356,7 +361,7 @@ void MainWindow::closeExecLogging() {
 
 void MainWindow::closeDataLogging() {
     if(data_log_filestream) {
-        printToExecLog("Closing data_log_filestream\n");
+        printToExecLog("Ending data logging...\n");
         fclose(data_log_filestream);
     }
     data_log_filestream = NULL;
