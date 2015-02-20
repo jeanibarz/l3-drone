@@ -307,7 +307,7 @@ void MainWindow::on_pushButton_stop_data_logging_clicked()
     ui->timeEdit_data_log_time->setEnabled(false);
 }
 
-std::string MainWindow::state_toString(uint8_t state_value) {
+std::string MainWindow::state_toString(uint8_t const state_value) {
     switch(state_value)
     {
         case STARTING: return "STARTING";
@@ -384,16 +384,16 @@ void MainWindow::closeDataLogging() {
     data_log_filestream = NULL;
 }
 
-void MainWindow::printToExecLog(std::string text)
+void MainWindow::printToExecLog(std::string const text)
 {
     printToFile(exec_log_filestream, QTime::currentTime().toString("HH:mm:ss").toStdString() + "\t" + text);
 }
 
-void MainWindow::printToDataLog(std::string text) {
+void MainWindow::printToDataLog(std::string const text) {
     printToFile(data_log_filestream, text);
 }
 
-void MainWindow::printToFile(FILE* filestream, std::string text)
+void MainWindow::printToFile(FILE* const filestream, std::string const text)
 {
     if(filestream)
     {
@@ -402,7 +402,7 @@ void MainWindow::printToFile(FILE* filestream, std::string text)
     }
 }
 
-void MainWindow::processPacketToData(rxPacket pkt) {
+void MainWindow::processPacketToData(rxPacket const pkt) {
     printToDataLog(boost::str(boost::format("%d\t%d\t%d\t%d\t%d\t%d\t%d")
                               % (int)pkt.packet_clock_
                               % (int)pkt.gyro_.roll_
@@ -440,7 +440,7 @@ void MainWindow::processPacketsBuffer() {
     }
 }
 
-bool MainWindow::isCircularyBefore(const uint8_t v1, const uint8_t v2, const int n) {// return 1 if v1 is before v2 in a circular buffer of size n
+bool MainWindow::isCircularyBefore(uint8_t const v1, uint8_t const v2, int const n) {// return 1 if v1 is before v2 in a circular buffer of size n
     int half = n / 2;
 
     if( abs((int)v1-(int)v2) < half ) { // values are next each others, for exemple 0 and 2 or 245 and 249
@@ -456,7 +456,7 @@ bool MainWindow::isCircularyBefore(const uint8_t v1, const uint8_t v2, const int
     }
 }
 
-void MainWindow::setNewError(std::string text) {
+void MainWindow::setNewError(std::string const text) {
     printToExecLog(text);
     error_msg = QString(text.c_str());
 }

@@ -63,23 +63,24 @@ private:
 
     void closeEvent(QCloseEvent *event);
     uint16_t calculateAvgLatency();
-    std::string state_toString(uint8_t state_value);
+    std::string state_toString(uint8_t const state_value);
+
     void initExecLogging();
     void initDataLogging();
 
     void closeExecLogging();
     void closeDataLogging();
 
-    void printToExecLog(std::string text);
-    void printToDataLog(std::string text);
-    void printToFile(FILE* filestream, std::string text);
+    void printToExecLog(std::string const text);
+    void printToDataLog(std::string const text);
+    void printToFile(FILE * const filestream, std::string const text);
 
-    bool isCircularyBefore(const uint8_t v1, const uint8_t v2, const int n = 255); // return 1 if v1 is before v2 in a circular buffer of size n
+    bool isCircularyBefore(uint8_t const v1, uint8_t const v2, int const n = 255); // return 1 if v1 is before v2 in a circular buffer of size n
 
-    void processPacketToData(rxPacket pkt);
+    void processPacketToData(rxPacket const pkt);
     void processPacketsBuffer();
 
-    void setNewError(std::string text);
+    void setNewError(std::string const text);
 
 private slots:
     void doWork();
