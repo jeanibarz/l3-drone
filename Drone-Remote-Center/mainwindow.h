@@ -74,6 +74,8 @@ private:
     void printToDataLog(std::string text);
     void printToFile(FILE* filestream, std::string text);
 
+    bool isCircularyBefore(const uint8_t v1, const uint8_t v2, const int n = 255); // return 1 if v1 is before v2 in a circular buffer of size n
+
     void processPacketToData(rxPacket pkt);
     void processPacketsBuffer();
 

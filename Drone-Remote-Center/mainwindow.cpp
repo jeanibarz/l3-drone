@@ -154,24 +154,23 @@ void MainWindow::doWork()
                         struct rxPacket rx_data(pkt->data);
 
                         // DO SOMETHING WITH PACKETS
-                        if( rx_data.packet_clock_ > max_packet_clock || ((int)max_packet_clock - (int)rx_data.packet_clock_) > 128 ) { // check if it's the most recent packet received or if it's a late packet
+
+                        // It's the most recent packet_clock
+                        if( isCircularyBefore(max_packet_clock, rx_data.packet_clock_) ) {
                             max_packet_clock = rx_data.packet_clock_;
                         }
-                        if( (rx_data.packet_clock_ < min_packet_clock && ((int)min_packet_clock - (int)rx_data.packet_clock_) < 128) ||
-                            (rx_data.packet_clock_ > min_packet_clock && ((int)rx_data.packet_clock_ - (int)min_packet_clock) > 128) ) {
+
+                        // It's a late packet already considered as lost
+                        if( isCircularyBefore(rx_data.packet_clock_, min_packet_clock) ) {
                             // We receive a late packet that has been considered lost : ignoring it
                             printToExecLog(boost::str(boost::format("Late packet received but already considered lost (min_clock_counter = %d, packet_clock = %d\n")
                                                       % min_packet_clock % rx_data.packet_clock_));
-                            // doing nothing...
+                            continue;
                         }
-                        else if(rx_data.packet_clock_ != max_packet_clock) { // it's a late packet
-                            printToExecLog(boost::str(boost::format("Late packet received (max_clock_counter = %d, packet_clock = %d\n")
-                                                      % max_packet_clock % rx_data.packet_clock_));
-                            packets_buffer.push_back(rx_data);
 
-                            // check if the buffered packets can fill the data from min_packet_clock
-                            processPacketsBuffer();
-                        }
+                        // Push the packet to buffer then process the buffer to check if we can fill data_log
+                        packets_buffer.push_back(rx_data);
+                        processPacketsBuffer();
 
                         if ((ret = xbee_pktFree(pkt)) != XBEE_ENONE) {
                             setNewError(boost::str(boost::format("xbee_pktFree() error (%d : %s)\n") % ret % xbee_errorToStr(ret)).c_str());
@@ -437,6 +436,22 @@ void MainWindow::processPacketsBuffer() {
                                       % min_packet_clock));
             }
             else break;
+        }
+    }
+}
+
+bool MainWindow::isCircularyBefore(const uint8_t v1, const uint8_t v2, const int n) {// return 1 if v1 is before v2 in a circular buffer of size n
+    int half = n / 2;
+
+    if( abs((int)v1-(int)v2) < half ) { // values are next each others, for exemple 0 and 2 or 245 and 249
+        return v1 < v2;
+    }
+    else { //  one value is at beginning and the other at the end (or vice versa), for exemple 253 and 1
+        if(v1>v2) { // v1 is at the end of buffer ==> v1 is before v2
+            return true;
+        }
+        else {
+            return false;
         }
     }
 }
