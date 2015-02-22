@@ -419,14 +419,16 @@ void MainWindow::processPacketsBuffer() {
         found_min = false;
         for(std::list<rxPacket>::iterator it = packets_buffer.begin(); it != packets_buffer.end(); ++it) {
             if(it->packet_clock_ == min_packet_clock) {
-                printToExecLog(boost::str(boost::format("Latest missing packet_clock = %d present in packets_buffer, writing it to data_log...\n")
-                                          % min_packet_clock));
+                if(packets_buffer.size() > 1) {
+                    printToExecLog(boost::str(boost::format("Latest missing packet_clock = %d present in packets_buffer, writing it to data_log...\n")
+                                                            % min_packet_clock));
+                }
                 // It's the latest packet missing : we can write it to data_log, incremenet min_packet_clock, and remove it from the packets_buffer
                 processPacketToData(*it);
                 packets_buffer.erase(it);
                 ++min_packet_clock;
                 found_min = true;
-                break; // we need to exit the loop because list size and iterator will change after removing the packet
+                break; // we need to exit the for loop because packets_buffer list size and iterator may change after removing the packet
             }
         }
         if(!found_min) {
